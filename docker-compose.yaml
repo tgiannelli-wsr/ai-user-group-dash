@@ -1,3 +1,7 @@
+# Pinned project name so manual and CI deploys share the same network/volume
+# regardless of which directory compose runs from.
+name: ai-user-group-dash
+
 services:
 
   # Hot-reload dev server (frontend only) — localhost:5173
