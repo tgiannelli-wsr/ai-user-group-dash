@@ -74,4 +74,7 @@ docker run --rm -v ai-strat-dashboard_dashboard-data:/data -v "$PWD":/backup bus
   Put it behind the corporate network/VPN. HTTP basic auth can be added later if needed.
 - **Concurrency**: last-writer-wins with a version guard; a conflicting save reloads the
   latest instead of clobbering. Suitable for occasional internal edits, not live co-editing.
-- **Port**: change the host port by editing `ports` in `docker-compose.yaml` (e.g. `"80:8080"`).
+- **Port**: defaults to host `8080`. If that port is taken on the server, create a
+  `.env` file next to `docker-compose.yaml` with `HOST_PORT=8088` (or `80`, etc.) and
+  redeploy — the container always listens on 8080 internally; only the published host
+  port changes. `.env` is gitignored, so it's per-server and the CI deploy respects it.
