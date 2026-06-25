@@ -1,0 +1,27 @@
+name: Deploy to fpt-dev-01
+
+# Builds and (re)starts the dashboard on fpt-dev-01 via a self-hosted runner
+# installed on that machine. No inbound SSH; secrets stay on the box.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-fpt-dev-01
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, linux]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker compose --profile prod build
+
+      - name: Start / update container
+        run: docker compose --profile prod up -d
+
+      - name: Prune dangling images
+        run: docker image prune -f

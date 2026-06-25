@@ -1,0 +1,30 @@
+services:
+
+  # Hot-reload dev server (frontend only) — localhost:5173
+  # Run `npm run dev:server` on the host for the API, or just use offline mode.
+  dev:
+    image: node:20-bookworm-slim
+    working_dir: /app
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    command: sh -c "npm install && npm run dev"
+    profiles: [dev]
+
+  # Production: Express serves the built app + shared API, SQLite on a volume — localhost:8080
+  prod:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      DB_PATH: /data/dashboard.db
+      PORT: "8080"
+    volumes:
+      - dashboard-data:/data
+    restart: unless-stopped
+    profiles: [prod]
+
+volumes:
+  dashboard-data:
