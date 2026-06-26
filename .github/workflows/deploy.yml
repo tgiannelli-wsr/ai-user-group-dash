@@ -15,9 +15,10 @@ jobs:
   deploy:
     runs-on: [self-hosted, linux]
     # Published host port. Set a repo Actions Variable HOST_PORT (Settings → Secrets and
-    # variables → Actions → Variables) to override; defaults to 8080 if unset.
+    # variables → Actions → Variables) to override; defaults to 8088 if unset
+    # (8080 is in use on fpt-dev-01).
     env:
-      HOST_PORT: ${{ vars.HOST_PORT || '8080' }}
+      HOST_PORT: ${{ vars.HOST_PORT || '8088' }}
     steps:
       - uses: actions/checkout@v4
 
