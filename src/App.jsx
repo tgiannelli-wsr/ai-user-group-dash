@@ -407,9 +407,10 @@ export default function App() {
 
       <div style={{width:172,background:BRAND.green,flexShrink:0,display:"flex",flexDirection:"column"}}>
         <div style={{padding:"14px 14px 12px",borderBottom:"1px solid rgba(255,255,255,0.1)"}}>
-          <div style={{background:"#fff",borderRadius:8,padding:"8px 10px",marginBottom:10,display:"flex",justifyContent:"center"}}>
+          <div style={{background:"#fff",borderRadius:8,padding:"8px 10px",marginBottom:6,display:"flex",justifyContent:"center"}}>
             <img src="/whitespot-logo.png" alt="White Spot" style={{width:"100%",maxWidth:120,height:"auto",display:"block"}} onError={e=>{ if (e.currentTarget.parentElement) e.currentTarget.parentElement.style.display="none"; }}/>
           </div>
+          <div style={{fontSize:9,color:"rgba(255,255,255,0.45)",marginBottom:10,letterSpacing:"0.02em"}}>Build {__BUILD_ID__} · {__BUILD_DATE__}</div>
           <div style={{fontSize:12,fontWeight:700,color:BRAND.cream}}>{data.title}</div>
           <div style={{fontSize:10,color:"rgba(255,255,255,0.45)",marginTop:2}}>White Spot · Triple O's</div>
         </div>

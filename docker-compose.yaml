@@ -21,9 +21,12 @@ services:
   # Published on host port ${HOST_PORT:-8080}. Override per-server via a .env file
   # (e.g. HOST_PORT=8088) if 8080 is taken — the container always listens on 8080.
   prod:
-    build: .
+    build:
+      context: .
+      args:
+        BUILD_ID: ${BUILD_ID:-dev}
     ports:
-      - "${HOST_PORT:-8080}:8080"
+      - "${HOST_PORT:-8088}:8080"
     environment:
       DB_PATH: /data/dashboard.db
       PORT: "8080"

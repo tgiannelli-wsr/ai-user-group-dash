@@ -1,6 +1,9 @@
 # ── Stage 1: build the React frontend ──────────────────
 FROM node:20-bookworm-slim AS build
 WORKDIR /app
+# Build metadata shown in the app (set by CI to the workflow run number).
+ARG BUILD_ID=dev
+ENV BUILD_ID=$BUILD_ID
 COPY package*.json ./
 RUN npm ci
 COPY . .

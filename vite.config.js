@@ -1,8 +1,16 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// Build metadata injected at build time (BUILD_ID set by CI to the run number).
+const BUILD_ID = process.env.BUILD_ID || 'dev'
+const BUILD_DATE = new Date().toISOString().slice(0, 10)
+
 export default defineConfig({
   plugins: [react()],
+  define: {
+    __BUILD_ID__: JSON.stringify(BUILD_ID),
+    __BUILD_DATE__: JSON.stringify(BUILD_DATE),
+  },
   server: {
     host: '0.0.0.0',
     port: 5173,

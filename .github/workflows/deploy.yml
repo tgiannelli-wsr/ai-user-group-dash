@@ -19,6 +19,7 @@ jobs:
     # (8080 is in use on fpt-dev-01).
     env:
       HOST_PORT: ${{ vars.HOST_PORT || '8088' }}
+      BUILD_ID: ${{ github.run_number }}
     steps:
       - uses: actions/checkout@v4
 
