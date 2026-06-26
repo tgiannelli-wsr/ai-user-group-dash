@@ -322,7 +322,6 @@ export default function App() {
   const sponsorMap = useMemo(() => Object.fromEntries(data.depts.map(d=>[d.id,d.sponsor||""])), [data.depts]);
   const allUCs  = useMemo(() => data.ucs.map(u => ({...u, deptName: deptMap[u.deptId] || u.deptId})), [data.ucs, deptMap]);
   const selDept = deptId==="all" ? null : data.depts.find(d=>d.id===deptId);
-  const customCount = allUCs.filter(u=>u.custom).length;
 
   const filtered = useMemo(() => {
     let list = deptId==="all" ? allUCs : allUCs.filter(u => u.deptId===deptId);
@@ -346,7 +345,7 @@ export default function App() {
 
   const saveForm = () => {
     if (!formData.n.trim() || !formData.p.trim()) return;
-    const base = editId ? data.ucs.find(u=>u.uid===editId) : {r:"—", custom:true, uid:newUid()};
+    const base = editId ? data.ucs.find(u=>u.uid===editId) : {r:"—", uid:newUid()};
     const uc   = {...base, ...formData, n:formData.n.trim(), p:formData.p.trim(), champ:(formData.champ||"").trim()};
     persist({...data, ucs: editId ? data.ucs.map(u => u.uid===editId?uc:u) : [...data.ucs, uc]});
     setFormOpen(false);
@@ -372,8 +371,8 @@ export default function App() {
 
   // ── data import / export / reset ──
   const exportCSV = () => {
-    const hdr = "Department,Exec Sponsor,Use Case,Champion,Mode,Platform,Effort,Human Loop,Net-New,Custom\n";
-    const rows = allUCs.map(u => [u.deptName,sponsorMap[u.deptId]||"",u.n,u.champ||"",mc[u.m].label,u.p,ec[u.e].label,hc[u.h].label,u.nn?"Yes":"No",u.custom?"Yes":"No"].map(v=>`"${v}"`).join(",")).join("\n");
+    const hdr = "Department,Exec Sponsor,Use Case,Champion,Mode,Platform,Effort,Human Loop,Net-New\n";
+    const rows = allUCs.map(u => [u.deptName,sponsorMap[u.deptId]||"",u.n,u.champ||"",mc[u.m].label,u.p,ec[u.e].label,hc[u.h].label,u.nn?"Yes":"No"].map(v=>`"${v}"`).join(",")).join("\n");
     Object.assign(document.createElement("a"),{href:"data:text/csv;charset=utf-8,"+encodeURIComponent(hdr+rows),download:"ai_roadmap.csv"}).click();
   };
   const exportJSON = () => {
@@ -432,7 +431,7 @@ export default function App() {
       <div style={{flex:1,display:"flex",flexDirection:"column",minWidth:0}}>
         <div style={{padding:"16px 18px 0",background:"#F4F2EC"}}>
           <div style={{display:"flex",gap:8,marginBottom:10}}>
-            {[{v:totAll,l:"Use cases",s:"total including custom",c:BRAND.red},{v:lowN,l:"Quick wins",s:"low effort · immediate",c:"#186E3B"},{v:customCount,l:"Custom added",s:"user-defined use cases",c:"#37657C"},{v:allUCs.filter(u=>u.nn).length,l:"Net-new items",s:"outside current stack",c:"#8E192C"}].map((s,i)=>(
+            {[{v:totAll,l:"Use cases",s:"across all departments",c:BRAND.red},{v:lowN,l:"Quick wins",s:"low effort · immediate",c:"#186E3B"},{v:data.depts.length,l:"Departments",s:"in the roadmap",c:"#37657C"},{v:allUCs.filter(u=>u.nn).length,l:"Net-new items",s:"outside current stack",c:"#8E192C"}].map((s,i)=>(
               <div key={i} style={{flex:1,background:"#fff",border:"1px solid #E4E7EC",borderRadius:8,padding:"10px 12px"}}>
                 <div style={{fontSize:24,fontWeight:700,color:s.c,lineHeight:1}}>{s.v}</div>
                 <div style={{fontSize:11,fontWeight:600,color:"#111827",marginTop:3}}>{s.l}</div>
@@ -536,7 +535,6 @@ export default function App() {
                     <span style={{fontSize:9,color:"#CBD5E1",fontWeight:700,minWidth:10}}>{u.r}</span>
                     <span style={{fontSize:12,fontWeight:500,color:"#111827"}}>{u.n}</span>
                     {u.nn     && <span style={{fontSize:8,background:"#F7E8EB",color:"#8E192C",padding:"1px 5px",borderRadius:3,fontWeight:700,whiteSpace:"nowrap",flexShrink:0}}>net-new</span>}
-                    {u.custom && <span style={{fontSize:8,background:"#EAF1F3",color:"#37657C",padding:"1px 5px",borderRadius:3,fontWeight:700,whiteSpace:"nowrap",flexShrink:0}}>custom</span>}
                     {u.champ  && <span title={`Champion: ${u.champ}`} style={{fontSize:8,background:"#EAF3EC",color:"#186E3B",padding:"1px 5px",borderRadius:3,fontWeight:700,whiteSpace:"nowrap",flexShrink:0,display:"inline-flex",alignItems:"center",gap:2}}><i className="ti ti-user" style={{fontSize:9}} aria-hidden="true"/>{u.champ}</span>}
                   </div>
                   {isAll && <div style={{fontSize:9,color:"#94A3B8",marginTop:1,paddingLeft:14}}>{u.deptName}</div>}
