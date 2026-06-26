@@ -27,23 +27,33 @@ In GitHub: **repo → Settings → Actions → Runners → New self-hosted runne
 Follow the commands it shows (they include a one-time registration token), e.g.:
 
 ```bash
+# IMPORTANT: install the runner OUTSIDE the repo clone (e.g. ~/actions-runner), NOT inside
+# ~/ai-user-group-dash. This repo's package.json has "type": "module"; if the runner lives
+# under it, Node treats the runner's bin/RunnerService.js as ESM and the *service* crashes
+# with "require is not defined" (interactive ./run.sh still works, which is misleading).
 mkdir -p ~/actions-runner && cd ~/actions-runner
 curl -o runner.tar.gz -L <URL-from-github>
 tar xzf runner.tar.gz
 ./config.sh --url https://github.com/<org>/<repo> --token <TOKEN>   # accept default labels (adds: self-hosted, linux, x64)
 sudo ./svc.sh install                 # install as a service so it runs on boot
 sudo ./svc.sh start
+sudo ./svc.sh status                  # must show active (running) + "Listening for Jobs" in the journal
 ```
 
 The workflow targets `runs-on: [self-hosted, linux]`, so these labels must be present
 (they are by default on a Linux runner). Make sure the runner's user is in the `docker`
 group (step 1) so the workflow can run `docker`.
 
+> If you already installed the runner inside the repo folder and the service crashes with
+> `require is not defined in ES module scope`, either reinstall it outside the repo, or drop
+> a CommonJS override in the runner folder:
+> `echo '{ "type": "commonjs" }' > <runner-dir>/package.json` then `svc.sh stop && svc.sh start`.
+
 ### 3. First deploy
 
 Push any commit to `main` (or trigger **Actions → Deploy to fpt-dev-01 → Run workflow**).
 The runner builds the image and starts the container. Then browse to
-**http://fpt-dev-01:8080**.
+**http://fpt-dev-01:8088** (the default; `HOST_PORT` repo Variable overrides it).
 
 > First load seeds the shared database. If you open it first from the browser that holds
 > your curated content, that content becomes the shared baseline; otherwise it starts from
