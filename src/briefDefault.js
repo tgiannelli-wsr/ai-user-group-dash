@@ -1,0 +1,102 @@
+// Seed content for the Project Brief. Kept in its own module so ProjectBrief.jsx
+// only exports a component (fast-refresh friendly) and App.jsx can seed DEFAULT_STATE.
+export const DEFAULT_BRIEF = {
+  eyebrow: 'Project Brief',
+  title: 'AI Pilot Program',
+  subtitle: 'A 6-month initiative · Led by VP Tech & BI · Sponsored by the Executive Team',
+  cohortLabel: 'The AI Cohort',
+  cohort: ['Brian McLaren', 'Carla Norman', 'Kamil Votruba', 'Karen Dosen', 'Krist Erikson', 'Laura Taylor', 'Sabrina Wong'],
+  overview: {
+    eyebrow: 'Overview',
+    title: 'What This Is',
+    paras: [
+      "The AI Pilot Program is White Spot's first structured approach to AI adoption — a 6-month initiative designed to explore how artificial intelligence can support the way we work across every part of the business.",
+      'At the centre of it is The AI Cohort: seven people, hand-selected from across Finance, Operations, People & Training, Supply, Franchise Partner Management, and Tech & BI, who will be the first to work closely with two AI tools — Claude and Microsoft Copilot.',
+      "This isn't a Tech project. It's an org-wide initiative, led by our VP of Tech & BI and sponsored by the executive team. The cohort's learnings will directly shape how AI is introduced across the wider organization. What this group learns, everyone benefits from.",
+    ],
+    callout: 'AI works best as a sidekick — something that lightens the load, not replaces the person doing the work.',
+  },
+  whyNow: {
+    eyebrow: 'Context',
+    title: 'Why Now',
+    paras: [
+      "There's a lot of noise around AI right now. This program isn't about the hype — it's about cutting through it practically.",
+      'For a long time, AI tools required technical know-how to get real value from. That\'s changed. Claude and Microsoft Copilot work in plain language, integrate naturally into tools many of us already use, and don\'t require any coding or IT background to get started.',
+      'The hospitality industry is beginning to move on this. Organizations that build AI capability now will have a meaningful head start. But beyond the competitive angle, there\'s something more personal at stake: this is a skill that will matter regardless of your role, your team, or where your career takes you.',
+      'What makes this moment particularly valuable is the chance to shape how AI enters our organization — rather than having it handed to you after decisions have already been made. The AI Cohort gets to build that foundation, with the full backing of the executive team behind them.',
+      'This is a rare opportunity to learn in a supported environment, on real work, with real tools — while it still feels new.',
+    ],
+  },
+  tools: {
+    eyebrow: 'Technology',
+    title: 'The Tools',
+    intro: 'The program is built around two tools. Both work in plain language — you type naturally, and they respond. No coding, no technical setup, no prior AI experience required.',
+    items: [
+      { name: 'Claude', by: 'by Anthropic', body: 'A standalone AI assistant, accessible via browser or app. A highly capable thinking partner — excellent for drafting documents, summarising long content, working through problems, and handling writing and analysis tasks that eat into your day.' },
+      { name: 'Microsoft Copilot', by: 'by Microsoft', body: 'Lives inside the Microsoft ecosystem you already use — Word, Outlook, Teams, Excel. Brings AI directly into your existing workflow: draft emails, pull insights from documents, summarise meetings, and work faster inside the tools you\'re already in.' },
+    ],
+    note: 'In a hospitality context, these tools help with: drafting reports and job descriptions, summarising supplier communications, preparing for meetings, analysing data, and handling admin tasks that pile up across every role. You won\'t be expected to use both equally — discovering what works best for your role is part of the pilot.',
+  },
+  measuring: {
+    eyebrow: 'Accountability',
+    title: "What We're Measuring",
+    intro: "A pilot without measurement is just experimentation. We're tracking five KPIs across six months. Results are reported to the exec team monthly. These metrics are about the health of the program — not the performance of individuals.",
+    kpis: [
+      { name: 'AI Adoption Rate',   target: '≥70% by month 6',        meaning: 'Cohort members actively using at least one AI tool monthly — the primary signal the program is working.' },
+      { name: 'Time Reclaimed',     target: '2+ hrs / person / week', meaning: 'Average weekly hours saved across AI-assisted tasks.' },
+      { name: 'Use Case Velocity',  target: 'On track monthly',       meaning: 'Cumulative use cases live vs. roadmap, tracked every month.' },
+      { name: 'Cycle Time Delta',   target: '30–40% faster',          meaning: 'Reduction in time for repeatable tasks — reports, job descriptions, summaries.' },
+      { name: 'Staff Satisfaction', target: '4 / 5 quarterly',        meaning: 'Usefulness and confidence score across the cohort each quarter.' },
+    ],
+    note: "Cohort members will be asked to contribute to tracking — logging time saved and sharing use cases. It's light-touch, and it's what turns individual experience into organizational learning.",
+  },
+  role: {
+    eyebrow: 'Participation',
+    title: 'Your Role',
+    intro: "Being part of The AI Cohort is a 6-month commitment — but it's designed to fit into your existing work, not be added on top of it.",
+    items: [
+      { title: 'Weekly Check-ins',          body: "Short, regular touchpoints to share what you've been trying, what's landing, and what isn't. These are learning conversations — not status reports." },
+      { title: 'Monthly Exec Reporting',    body: "Your experiences and insights feed directly into a monthly presentation to the executive team. You won't be presenting — but what you learn will be." },
+      { title: 'Active Tool Use',           body: "You'll be expected to use Claude and/or Copilot on your real work. Not contrived exercises — actual tasks from your day-to-day. That's where the real learning happens." },
+      { title: 'Honest Feedback',           body: "Share openly about what's working and what isn't. The value of this pilot comes from the truth, not a polished version of it." },
+      { title: 'Department Representation', body: "You're not just participating for yourself. Your perspective shapes how AI eventually lands across your team and function." },
+    ],
+    note: "Expect a few hours per week — some of which will replace time you're already spending on tasks as the tools pull their weight. You don't need to be a tech person. Curiosity is the only real requirement.",
+  },
+  benefits: {
+    eyebrow: 'Benefits',
+    title: "What's In It For You",
+    intro: "This isn't just good for the organization — it's genuinely good for you.",
+    items: [
+      { title: 'Skill building that travels with you', body: 'AI literacy is becoming one of the most valuable skills across every industry. Learning now, in a supported environment, gives you a lasting head start.' },
+      { title: "You're first",                         body: "Before AI rolls out more broadly, you'll already know how it works and where it helps. That's a meaningful advantage." },
+      { title: 'Visibility with leadership',           body: "Your insights feed directly into monthly exec reporting. The people shaping this org's future will know your name and your contribution." },
+      { title: 'A lighter admin load',                 body: 'Reclaim time from the repetitive tasks that pile up — reports, summaries, drafts, emails. The stuff that eats your week.' },
+      { title: 'A voice in how AI enters the org',     body: "You're not receiving a rollout — you're shaping one. The Cohort's learnings directly influence how AI is introduced org-wide." },
+      { title: 'Peer learning across the business',    body: 'Work alongside people from Finance, Ops, P&T, Supply, Franchise Management, and Tech & BI — a rare cross-functional learning opportunity.' },
+      { title: 'Direct access and support',            body: "You won't be figuring this out alone. The program lead is available throughout, and the structure is designed to support you at every stage." },
+      { title: 'Recognition as an AI champion',        body: "As the program matures, the Cohort will be recognized as the people who led the way. That's a meaningful thing to be known for." },
+    ],
+  },
+  decide: {
+    eyebrow: 'Next Steps',
+    title: 'How to Decide',
+    intro: "This is a voluntary program. You've been selected because we believe you'd be a strong fit — but the decision to participate is entirely yours.",
+    steps: [
+      { label: 'Read this brief fully.',   body: "If you've made it this far, you're most of the way there." },
+      { label: 'Be honest with yourself.', body: "The cohort works best when everyone is genuinely curious and willing to engage. If the timing isn't right, that's a valid answer." },
+      { label: 'Ask questions.',           body: "If anything is unclear — the time commitment, the tools, what's expected — reach out before you decide. There are no wrong questions." },
+      { label: 'Make your decision.',      body: 'Confirm your participation or pass within [X days of receiving this brief]. Declining won\'t affect your standing or your relationship with the team.' },
+    ],
+    inTitle: "If you're in",
+    inBody: "Welcome to The AI Cohort. We're glad to have you — and excited about what we'll learn together.",
+    outTitle: "If now isn't the right time",
+    outBody: 'We understand — and there will be opportunities to engage with this program as it evolves and rolls out more broadly.',
+  },
+  footer: {
+    contactLabel: 'Questions? Reach out directly',
+    name: '[Your Name] · VP, Tech & BI',
+    email: '[email / contact details]',
+    copyright: 'White Spot Limited · AI Pilot Program · 2026',
+  },
+};

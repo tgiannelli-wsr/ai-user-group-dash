@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import ProjectBrief from './ProjectBrief';
+import { DEFAULT_BRIEF } from './briefDefault';
 
 // ── DEFAULT DATA ────────────────────────────────────────
 const DEFAULT_DEPTS_FULL = [
@@ -100,6 +101,7 @@ const DEFAULT_STATE = {
   ucs:   DEFAULT_DEPTS_FULL.flatMap(d => d.uc.map(u => ({...u, deptId:d.id, uid:`${d.id}-${u.r}`}))),
   waves: DEFAULT_WAVES,
   kpis:  DEFAULT_KPIS,
+  brief: DEFAULT_BRIEF,
   mc:    DEFAULT_MC,
   ec:    DEFAULT_EC,
   hc:    DEFAULT_HC,
@@ -202,7 +204,20 @@ function SaveStatus({ status }) {
     <span style={{width:7,height:7,borderRadius:"50%",background:cfg.c,flexShrink:0}}/>{cfg.t}</span>;
 }
 
-const EMPTY_FORM = { deptId:DEFAULT_STATE.depts[0].id, n:"", m:"chat", p:"", e:"low", h:"yes", nn:false, champ:"" };
+// Labeled input/textarea used by the Project-brief editor.
+function BField({ label, value, onChange, rows, ph }) {
+  const base = {fontSize:11,padding:"5px 8px",border:"1px solid #D1D5DB",borderRadius:5,width:"100%",background:"#fff",boxSizing:"border-box"};
+  return (
+    <div style={{marginBottom:8}}>
+      {label && <div style={{fontSize:10,color:"#6B7280",marginBottom:3}}>{label}</div>}
+      {rows
+        ? <textarea value={value||""} onChange={e=>onChange(e.target.value)} rows={rows} style={{...base,fontFamily:"inherit",lineHeight:1.5,resize:"vertical"}} placeholder={ph}/>
+        : <input value={value||""} onChange={e=>onChange(e.target.value)} style={base} placeholder={ph}/>}
+    </div>
+  );
+}
+
+const EMPTY_FORM = { deptId:DEFAULT_STATE.depts[0].id, n:"", m:"chat", p:"", e:"low", h:"yes", nn:false, champ:"", wave:"" };
 
 export default function App() {
   const [data,     setData]     = useState(loadInitial);
@@ -276,7 +291,7 @@ export default function App() {
         if (cancelled) return;
         if (state) {
           verRef.current = version || 0;
-          setData(state); cacheLocal(state); setStatus("saved");
+          setData({...clone(DEFAULT_STATE), ...state}); cacheLocal(state); setStatus("saved");
         } else {
           // Empty server → seed it with this browser's curated data (or the defaults).
           const seed = loadInitial();
@@ -302,7 +317,7 @@ export default function App() {
         const res = await fetch("/api/state");
         if (!res.ok) throw new Error("bad");
         const { state, version } = await res.json();
-        if (state && version !== verRef.current) { verRef.current = version; setData(state); cacheLocal(state); }
+        if (state && version !== verRef.current) { verRef.current = version; setData({...clone(DEFAULT_STATE), ...state}); cacheLocal(state); }
         if (statusRef.current === "offline") setStatus("saved");
       } catch { setStatus("offline"); }
     }, 15000);
@@ -321,6 +336,7 @@ export default function App() {
   const { mc, ec, hc } = data;
   const deptMap = useMemo(() => Object.fromEntries(data.depts.map(d=>[d.id,d.name])), [data.depts]);
   const sponsorMap = useMemo(() => Object.fromEntries(data.depts.map(d=>[d.id,d.sponsor||""])), [data.depts]);
+  const waveMap = useMemo(() => Object.fromEntries(data.waves.map(w=>[w.num,w])), [data.waves]);
   const allUCs  = useMemo(() => data.ucs.map(u => ({...u, deptName: deptMap[u.deptId] || u.deptId})), [data.ucs, deptMap]);
   const selDept = deptId==="all" ? null : data.depts.find(d=>d.id===deptId);
 
@@ -335,19 +351,20 @@ export default function App() {
   const isAll   = deptId === "all";
   const totAll  = allUCs.length;
   const lowN    = allUCs.filter(u=>u.e==="low").length;
+  const unassigned = allUCs.filter(u=>!u.wave);
 
   const cMode   = Object.keys(mc).map(k => ({label:mc[k].label, v:allUCs.filter(u=>u.m===k).length, color:MODE_COLORS[k]}));
   const cEff    = Object.keys(ec).map(k => ({label:ec[k].label, v:allUCs.filter(u=>u.e===k).length, color:EFF_COLORS[k]}));
   const cHITL   = Object.keys(hc).map(k => ({label:hc[k].label, v:allUCs.filter(u=>u.h===k).length, color:HITL_COLORS[k]}));
 
   const openAdd  = () => { setFormData({...EMPTY_FORM, deptId: deptId!=="all"?deptId:data.depts[0].id}); setEditId(null); setFormOpen(true); };
-  const openEdit = (u) => { setFormData({deptId:u.deptId,n:u.n,m:u.m,p:u.p,e:u.e,h:u.h,nn:!!u.nn,champ:u.champ||""}); setEditId(u.uid); setFormOpen(true); };
+  const openEdit = (u) => { setFormData({deptId:u.deptId,n:u.n,m:u.m,p:u.p,e:u.e,h:u.h,nn:!!u.nn,champ:u.champ||"",wave:u.wave||""}); setEditId(u.uid); setFormOpen(true); };
   const setF     = (k) => (e) => setFormData(prev => ({...prev,[k]:e.target.type==="checkbox"?e.target.checked:e.target.value}));
 
   const saveForm = () => {
     if (!formData.n.trim() || !formData.p.trim()) return;
     const base = editId ? data.ucs.find(u=>u.uid===editId) : {r:"—", uid:newUid()};
-    const uc   = {...base, ...formData, n:formData.n.trim(), p:formData.p.trim(), champ:(formData.champ||"").trim()};
+    const uc   = {...base, ...formData, n:formData.n.trim(), p:formData.p.trim(), champ:(formData.champ||"").trim(), wave:formData.wave?Number(formData.wave):null};
     persist({...data, ucs: editId ? data.ucs.map(u => u.uid===editId?uc:u) : [...data.ucs, uc]});
     setFormOpen(false);
   };
@@ -364,11 +381,16 @@ export default function App() {
     persist({...data, depts:data.depts.filter((_,i)=>i!==idx), ucs:data.ucs.filter(u=>u.deptId!==d.id)});
   };
 
-  // ── wave items ──
-  const setWaveItems = (wi, fn) => update({waves: data.waves.map((w,i)=>i!==wi?w:{...w, items: fn(w.items)})});
-
   // ── legends ──
   const updateLegend = (group, k, field, val) => update({[group]: {...data[group], [k]: {...data[group][k], [field]: val}}});
+
+  // ── project brief ──
+  const briefData = {...DEFAULT_BRIEF, ...data.brief};
+  const setBrief      = (next) => update({brief: next});
+  const setBriefField = (k, v) => setBrief({...briefData, [k]: v});
+  const setBriefSec   = (sec, patch) => setBrief({...briefData, [sec]: {...briefData[sec], ...patch}});
+  const briefList     = (sec, key, fn) => setBriefSec(sec, {[key]: fn(briefData[sec][key] || [])});
+  const listMove = (arr, i, dir) => { const a=[...arr], j=i+dir; if(j<0||j>=a.length) return a; [a[i],a[j]]=[a[j],a[i]]; return a; };
 
   // ── data import / export / reset ──
   const exportCSV = () => {
@@ -401,6 +423,9 @@ export default function App() {
   const card = {background:"#fff",border:"1px solid #E4E7EC",borderRadius:8,padding:"14px",marginBottom:12};
   const secLbl = {fontSize:10,fontWeight:700,color:"#9CA3AF",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10};
   const addBtn = {fontSize:11,padding:"5px 12px",borderRadius:6,border:"1px dashed #CBD5E1",background:"#fff",color:"#475569",cursor:"pointer",marginTop:4};
+  const sub = {fontSize:11,fontWeight:700,color:"#374151",margin:"16px 0 6px"};
+  const itemBox = {border:"1px solid #E9EBF0",borderRadius:6,padding:"10px",marginBottom:8};
+  const ctrlRow = {display:"flex",gap:6,justifyContent:"flex-end",marginTop:6};
 
   return (
     <div style={{display:"flex",fontFamily:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',background:"#F4F2EC",borderRadius:12,overflow:"hidden",fontSize:13,color:"#111827"}}>
@@ -459,7 +484,7 @@ export default function App() {
 
         <div style={{padding:tab==="brief"?0:"14px 18px 22px",background:"#F4F2EC"}}>
 
-          {tab==="brief" && <ProjectBrief/>}
+          {tab==="brief" && <ProjectBrief brief={briefData}/>}
 
           {tab==="uc" && <>
             {selDept && (
@@ -491,11 +516,16 @@ export default function App() {
                     <label style={{display:"flex",alignItems:"center",gap:6,marginTop:7,cursor:"pointer"}}>
                       <input type="checkbox" checked={formData.nn} onChange={setF("nn")}/><span style={{fontSize:11}}>Requires new budget</span></label></div>
                 </div>
-                <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:8,marginBottom:10}}>
+                <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr",gap:8,marginBottom:10}}>
                   <div><div style={{fontSize:10,color:"#6B7280",marginBottom:3}}>Platform / tool *</div>
                     <input value={formData.p} onChange={setF("p")} placeholder="e.g. Copilot in Word, Power Automate..." style={inp}/></div>
                   <div><div style={{fontSize:10,color:"#6B7280",marginBottom:3}}>Champion(s)</div>
                     <input value={formData.champ} onChange={setF("champ")} placeholder="e.g. Jane Doe, J. Smith" style={inp}/></div>
+                  <div><div style={{fontSize:10,color:"#6B7280",marginBottom:3}}>Wave</div>
+                    <select value={formData.wave} onChange={setF("wave")} style={{...inp,cursor:"pointer"}}>
+                      <option value="">Unassigned</option>
+                      {data.waves.map(w=><option key={w.num} value={w.num}>Wave {w.num} — {w.title}</option>)}
+                    </select></div>
                 </div>
                 <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
                   <button onClick={()=>setFormOpen(false)} style={{fontSize:11,padding:"6px 14px",borderRadius:6,border:"1px solid #D1D5DB",background:"#fff",color:"#6B7280",cursor:"pointer"}}>Cancel</button>
@@ -541,6 +571,7 @@ export default function App() {
                     <span style={{fontSize:12,fontWeight:500,color:"#111827"}}>{u.n}</span>
                     {u.nn     && <span style={{fontSize:8,background:"#F7E8EB",color:"#8E192C",padding:"1px 5px",borderRadius:3,fontWeight:700,whiteSpace:"nowrap",flexShrink:0}}>net-new</span>}
                     {u.champ  && <span title={`Champion: ${u.champ}`} style={{fontSize:8,background:"#EAF3EC",color:"#186E3B",padding:"1px 5px",borderRadius:3,fontWeight:700,whiteSpace:"nowrap",flexShrink:0,display:"inline-flex",alignItems:"center",gap:2}}><i className="ti ti-user" style={{fontSize:9}} aria-hidden="true"/>{u.champ}</span>}
+                    {u.wave && waveMap[u.wave] && <span title={`Wave ${u.wave} — ${waveMap[u.wave].title}`} style={{fontSize:8,background:waveMap[u.wave].color+"22",color:waveMap[u.wave].color,padding:"1px 5px",borderRadius:3,fontWeight:700,whiteSpace:"nowrap",flexShrink:0}}>Wave {u.wave}</span>}
                   </div>
                   {isAll && <div style={{fontSize:9,color:"#94A3B8",marginTop:1,paddingLeft:14}}>{u.deptName}</div>}
                 </div>
@@ -604,7 +635,7 @@ export default function App() {
           {tab==="waves" && <>
             <div style={{display:"flex",gap:8,marginBottom:12}}>
               {data.waves.map(w=>{
-                const em={1:"low",2:"med",3:"high"},wUCs=allUCs.filter(u=>u.e===em[w.num]),nnC=wUCs.filter(u=>u.nn).length;
+                const wUCs=allUCs.filter(u=>u.wave===w.num),nnC=wUCs.filter(u=>u.nn).length;
                 return<div key={w.num} style={{flex:1,background:"#fff",border:"1px solid #E4E7EC",borderTop:`3px solid ${w.color}`,borderRadius:8,padding:"10px 14px"}}>
                   <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
                     <div style={{width:18,height:18,borderRadius:"50%",background:w.color,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><span style={{fontSize:9,fontWeight:800,color:"#fff"}}>{w.num}</span></div>
@@ -628,16 +659,39 @@ export default function App() {
                 <div style={{fontSize:10,color:w.color,fontWeight:600,marginTop:1}}>{w.focus}</div>
               </div>)}
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
-              {data.waves.map(w=><div key={w.num} style={{background:"#fff",border:"1px solid #E4E7EC",borderTop:`3px solid ${w.color}`,borderRadius:8,padding:"14px"}}>
-                <div style={{fontSize:12,fontWeight:700,color:"#111827",marginBottom:1}}>Wave {w.num} — {w.title}</div>
-                <div style={{fontSize:10,color:"#9CA3AF",marginBottom:12}}>{w.period} · {w.focus}</div>
-                {w.items.map((item,i)=><div key={i} style={{display:"flex",gap:6,paddingBottom:5,marginBottom:5,alignItems:"flex-start",borderBottom:i<w.items.length-1?"1px solid #F3F4F6":"none"}}>
-                  <div style={{width:15,height:15,borderRadius:"50%",flexShrink:0,marginTop:1,background:w.color+"22",display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{fontSize:8,fontWeight:800,color:w.color}}>{i+1}</span></div>
-                  <span style={{fontSize:11,color:"#374151",lineHeight:1.4}}>{item}</span>
-                </div>)}
-              </div>)}
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:12}}>
+              {data.waves.map(w=>{
+                const wUCs=allUCs.filter(u=>u.wave===w.num);
+                return <div key={w.num} style={{background:"#fff",border:"1px solid #E4E7EC",borderTop:`3px solid ${w.color}`,borderRadius:8,padding:"14px"}}>
+                  <div style={{fontSize:12,fontWeight:700,color:"#111827",marginBottom:1}}>Wave {w.num} — {w.title}</div>
+                  <div style={{fontSize:10,color:"#9CA3AF",marginBottom:12}}>{w.period} · {w.focus}</div>
+                  {wUCs.length===0
+                    ? <div style={{fontSize:11,color:"#9CA3AF",fontStyle:"italic"}}>No use cases assigned yet.</div>
+                    : wUCs.map((u,i)=><div key={u.uid} style={{display:"flex",gap:8,paddingBottom:7,marginBottom:7,alignItems:"flex-start",borderBottom:i<wUCs.length-1?"1px solid #F3F4F6":"none"}}>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:12,color:"#111827",fontWeight:500}}>{u.n}</div>
+                          <div style={{fontSize:9,color:"#94A3B8",marginTop:1}}>{u.deptName}{u.champ?` · ${u.champ}`:""}</div>
+                        </div>
+                        <div style={{display:"flex",gap:4,flexShrink:0}}><Pill cfg={mc[u.m]}/><Pill cfg={ec[u.e]}/></div>
+                      </div>)}
+                </div>;
+              })}
             </div>
+            {unassigned.length>0 && (
+              <div style={{background:"#fff",border:"1px dashed #CBD5E1",borderRadius:8,padding:"14px"}}>
+                <div style={{fontSize:12,fontWeight:700,color:"#111827",marginBottom:2}}>Unassigned <span style={{fontSize:11,fontWeight:400,color:"#9CA3AF"}}>· {unassigned.length}</span></div>
+                <div style={{fontSize:10,color:"#9CA3AF",marginBottom:12}}>Pick a Wave on each to schedule it into the roadmap.</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:8}}>
+                  {unassigned.map(u=><div key={u.uid} style={{display:"flex",gap:8,alignItems:"center",border:"1px solid #E9EBF0",borderRadius:6,padding:"7px 10px"}}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:12,color:"#111827",fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} title={u.n}>{u.n}</div>
+                      <div style={{fontSize:9,color:"#94A3B8"}}>{u.deptName}</div>
+                    </div>
+                    <button onClick={()=>{setTab("uc");openEdit(u);}} title="Open and assign a wave" style={{fontSize:10,padding:"3px 8px",borderRadius:5,border:"1px solid #D1D5DB",background:"#fff",color:"#374151",cursor:"pointer",flexShrink:0}}>Assign</button>
+                  </div>)}
+                </div>
+              </div>
+            )}
           </>}
 
           {tab==="kpis" && <>
@@ -696,20 +750,11 @@ export default function App() {
                     <input value={w.period} onChange={e=>update({waves:data.waves.map((x,i)=>i===wi?{...x,period:e.target.value}:x)})} style={{...inp,width:120}} placeholder="Period"/>
                     <input type="color" value={w.color} onChange={e=>update({waves:data.waves.map((x,i)=>i===wi?{...x,color:e.target.value}:x)})} title="Color" style={{width:30,height:28,padding:0,border:"1px solid #D1D5DB",borderRadius:5,background:"#fff",cursor:"pointer",flexShrink:0}}/>
                   </div>
-                  <input value={w.focus} onChange={e=>update({waves:data.waves.map((x,i)=>i===wi?{...x,focus:e.target.value}:x)})} style={{...inp,marginBottom:8}} placeholder="Focus"/>
-                  <div style={{fontSize:9,fontWeight:700,color:"#9CA3AF",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:5}}>Items</div>
-                  {w.items.map((it,ii)=>(
-                    <div key={ii} style={{display:"flex",gap:6,alignItems:"center",marginBottom:4}}>
-                      <input value={it} onChange={e=>setWaveItems(wi,items=>items.map((x,j)=>j===ii?e.target.value:x))} style={{...inp,flex:1}}/>
-                      <MiniBtn icon="ti-chevron-up" onClick={()=>setWaveItems(wi,items=>{const a=[...items];if(ii<=0)return a;[a[ii],a[ii-1]]=[a[ii-1],a[ii]];return a;})} title="Move up" disabled={ii===0}/>
-                      <MiniBtn icon="ti-chevron-down" onClick={()=>setWaveItems(wi,items=>{const a=[...items];if(ii>=a.length-1)return a;[a[ii],a[ii+1]]=[a[ii+1],a[ii]];return a;})} title="Move down" disabled={ii===w.items.length-1}/>
-                      <MiniBtn icon="ti-trash" danger onClick={()=>setWaveItems(wi,items=>items.filter((_,j)=>j!==ii))} title="Remove item"/>
-                    </div>
-                  ))}
-                  <button onClick={()=>setWaveItems(wi,items=>[...items,"New item"])} style={addBtn}>+ Add item</button>
+                  <input value={w.focus} onChange={e=>update({waves:data.waves.map((x,i)=>i===wi?{...x,focus:e.target.value}:x)})} style={inp} placeholder="Focus"/>
+                  <div style={{fontSize:9,color:"#9CA3AF",marginTop:6}}>{allUCs.filter(u=>u.wave===w.num).length} use case(s) assigned</div>
                 </div>
               ))}
-              <div style={{fontSize:10,color:"#9CA3AF",marginTop:4}}>Wave count is fixed at 3 — waves 1/2/3 map to Low/Medium/High effort in the summary counts.</div>
+              <div style={{fontSize:10,color:"#9CA3AF",marginTop:4}}>Assign use cases to a wave from each use case (Use cases → edit → Wave). The Wave plan tab lists what's assigned to each wave.</div>
             </div>
 
             {/* KPIs */}
@@ -751,6 +796,192 @@ export default function App() {
                 </div>
               ))}
               <div style={{fontSize:10,color:"#9CA3AF"}}>Categories themselves are fixed (they drive the filters and charts); only their labels and colors are editable here.</div>
+            </div>
+
+            {/* Project brief — header & cohort */}
+            <div style={card}>
+              <div style={secLbl}>Project brief — header</div>
+              <BField label="Eyebrow" value={briefData.eyebrow} onChange={v=>setBriefField('eyebrow',v)}/>
+              <BField label="Title" value={briefData.title} onChange={v=>setBriefField('title',v)}/>
+              <BField label="Subtitle" value={briefData.subtitle} onChange={v=>setBriefField('subtitle',v)}/>
+              <BField label="Cohort label" value={briefData.cohortLabel} onChange={v=>setBriefField('cohortLabel',v)}/>
+              <div style={sub}>Cohort members</div>
+              {(briefData.cohort||[]).map((name,i)=>(
+                <div key={i} style={{display:"flex",gap:6,alignItems:"center",marginBottom:4}}>
+                  <input value={name} onChange={e=>setBriefField('cohort',briefData.cohort.map((x,j)=>j===i?e.target.value:x))} style={inp}/>
+                  <MiniBtn icon="ti-chevron-up" onClick={()=>setBriefField('cohort',listMove(briefData.cohort,i,-1))} title="Move up" disabled={i===0}/>
+                  <MiniBtn icon="ti-chevron-down" onClick={()=>setBriefField('cohort',listMove(briefData.cohort,i,1))} title="Move down" disabled={i===briefData.cohort.length-1}/>
+                  <MiniBtn icon="ti-trash" danger onClick={()=>setBriefField('cohort',briefData.cohort.filter((_,j)=>j!==i))} title="Remove"/>
+                </div>
+              ))}
+              <button onClick={()=>setBriefField('cohort',[...(briefData.cohort||[]),"New member"])} style={addBtn}>+ Add member</button>
+            </div>
+
+            {/* Brief — Overview */}
+            <div style={card}>
+              <div style={secLbl}>Brief — Overview</div>
+              <BField label="Eyebrow" value={briefData.overview.eyebrow} onChange={v=>setBriefSec('overview',{eyebrow:v})}/>
+              <BField label="Title" value={briefData.overview.title} onChange={v=>setBriefSec('overview',{title:v})}/>
+              <div style={sub}>Paragraphs</div>
+              {(briefData.overview.paras||[]).map((p,i)=>(
+                <div key={i} style={itemBox}>
+                  <BField value={p} rows={3} onChange={v=>briefList('overview','paras',a=>a.map((x,j)=>j===i?v:x))}/>
+                  <div style={ctrlRow}>
+                    <MiniBtn icon="ti-chevron-up" onClick={()=>briefList('overview','paras',a=>listMove(a,i,-1))} title="Move up" disabled={i===0}/>
+                    <MiniBtn icon="ti-chevron-down" onClick={()=>briefList('overview','paras',a=>listMove(a,i,1))} title="Move down" disabled={i===briefData.overview.paras.length-1}/>
+                    <MiniBtn icon="ti-trash" danger onClick={()=>briefList('overview','paras',a=>a.filter((_,j)=>j!==i))} title="Remove"/>
+                  </div>
+                </div>
+              ))}
+              <button onClick={()=>briefList('overview','paras',a=>[...a,"New paragraph"])} style={addBtn}>+ Add paragraph</button>
+              <div style={sub}>Callout</div>
+              <BField value={briefData.overview.callout} rows={2} onChange={v=>setBriefSec('overview',{callout:v})}/>
+            </div>
+
+            {/* Brief — Why now */}
+            <div style={card}>
+              <div style={secLbl}>Brief — Why now</div>
+              <BField label="Eyebrow" value={briefData.whyNow.eyebrow} onChange={v=>setBriefSec('whyNow',{eyebrow:v})}/>
+              <BField label="Title" value={briefData.whyNow.title} onChange={v=>setBriefSec('whyNow',{title:v})}/>
+              <div style={sub}>Paragraphs</div>
+              {(briefData.whyNow.paras||[]).map((p,i)=>(
+                <div key={i} style={itemBox}>
+                  <BField value={p} rows={3} onChange={v=>briefList('whyNow','paras',a=>a.map((x,j)=>j===i?v:x))}/>
+                  <div style={ctrlRow}>
+                    <MiniBtn icon="ti-chevron-up" onClick={()=>briefList('whyNow','paras',a=>listMove(a,i,-1))} title="Move up" disabled={i===0}/>
+                    <MiniBtn icon="ti-chevron-down" onClick={()=>briefList('whyNow','paras',a=>listMove(a,i,1))} title="Move down" disabled={i===briefData.whyNow.paras.length-1}/>
+                    <MiniBtn icon="ti-trash" danger onClick={()=>briefList('whyNow','paras',a=>a.filter((_,j)=>j!==i))} title="Remove"/>
+                  </div>
+                </div>
+              ))}
+              <button onClick={()=>briefList('whyNow','paras',a=>[...a,"New paragraph"])} style={addBtn}>+ Add paragraph</button>
+            </div>
+
+            {/* Brief — Tools */}
+            <div style={card}>
+              <div style={secLbl}>Brief — Tools</div>
+              <BField label="Eyebrow" value={briefData.tools.eyebrow} onChange={v=>setBriefSec('tools',{eyebrow:v})}/>
+              <BField label="Title" value={briefData.tools.title} onChange={v=>setBriefSec('tools',{title:v})}/>
+              <BField label="Intro" value={briefData.tools.intro} rows={2} onChange={v=>setBriefSec('tools',{intro:v})}/>
+              <div style={sub}>Tools</div>
+              {(briefData.tools.items||[]).map((t,i)=>(
+                <div key={i} style={itemBox}>
+                  <BField label="Name" value={t.name} onChange={v=>briefList('tools','items',a=>a.map((x,j)=>j===i?{...x,name:v}:x))}/>
+                  <BField label="By" value={t.by} onChange={v=>briefList('tools','items',a=>a.map((x,j)=>j===i?{...x,by:v}:x))}/>
+                  <BField label="Body" value={t.body} rows={3} onChange={v=>briefList('tools','items',a=>a.map((x,j)=>j===i?{...x,body:v}:x))}/>
+                  <div style={ctrlRow}>
+                    <MiniBtn icon="ti-chevron-up" onClick={()=>briefList('tools','items',a=>listMove(a,i,-1))} title="Move up" disabled={i===0}/>
+                    <MiniBtn icon="ti-chevron-down" onClick={()=>briefList('tools','items',a=>listMove(a,i,1))} title="Move down" disabled={i===briefData.tools.items.length-1}/>
+                    <MiniBtn icon="ti-trash" danger onClick={()=>briefList('tools','items',a=>a.filter((_,j)=>j!==i))} title="Remove"/>
+                  </div>
+                </div>
+              ))}
+              <button onClick={()=>briefList('tools','items',a=>[...a,{name:"New tool",by:"",body:""}])} style={addBtn}>+ Add tool</button>
+              <div style={sub}>Note</div>
+              <BField value={briefData.tools.note} rows={3} onChange={v=>setBriefSec('tools',{note:v})}/>
+            </div>
+
+            {/* Brief — Measuring */}
+            <div style={card}>
+              <div style={secLbl}>Brief — Measuring (KPIs)</div>
+              <BField label="Eyebrow" value={briefData.measuring.eyebrow} onChange={v=>setBriefSec('measuring',{eyebrow:v})}/>
+              <BField label="Title" value={briefData.measuring.title} onChange={v=>setBriefSec('measuring',{title:v})}/>
+              <BField label="Intro" value={briefData.measuring.intro} rows={2} onChange={v=>setBriefSec('measuring',{intro:v})}/>
+              <div style={sub}>KPIs</div>
+              {(briefData.measuring.kpis||[]).map((k,i)=>(
+                <div key={i} style={itemBox}>
+                  <BField label="Name" value={k.name} onChange={v=>briefList('measuring','kpis',a=>a.map((x,j)=>j===i?{...x,name:v}:x))}/>
+                  <BField label="Target" value={k.target} onChange={v=>briefList('measuring','kpis',a=>a.map((x,j)=>j===i?{...x,target:v}:x))}/>
+                  <BField label="What it means" value={k.meaning} rows={2} onChange={v=>briefList('measuring','kpis',a=>a.map((x,j)=>j===i?{...x,meaning:v}:x))}/>
+                  <div style={ctrlRow}>
+                    <MiniBtn icon="ti-chevron-up" onClick={()=>briefList('measuring','kpis',a=>listMove(a,i,-1))} title="Move up" disabled={i===0}/>
+                    <MiniBtn icon="ti-chevron-down" onClick={()=>briefList('measuring','kpis',a=>listMove(a,i,1))} title="Move down" disabled={i===briefData.measuring.kpis.length-1}/>
+                    <MiniBtn icon="ti-trash" danger onClick={()=>briefList('measuring','kpis',a=>a.filter((_,j)=>j!==i))} title="Remove"/>
+                  </div>
+                </div>
+              ))}
+              <button onClick={()=>briefList('measuring','kpis',a=>[...a,{name:"New KPI",target:"",meaning:""}])} style={addBtn}>+ Add KPI</button>
+              <div style={sub}>Note</div>
+              <BField value={briefData.measuring.note} rows={2} onChange={v=>setBriefSec('measuring',{note:v})}/>
+            </div>
+
+            {/* Brief — Your role */}
+            <div style={card}>
+              <div style={secLbl}>Brief — Your role</div>
+              <BField label="Eyebrow" value={briefData.role.eyebrow} onChange={v=>setBriefSec('role',{eyebrow:v})}/>
+              <BField label="Title" value={briefData.role.title} onChange={v=>setBriefSec('role',{title:v})}/>
+              <BField label="Intro" value={briefData.role.intro} rows={2} onChange={v=>setBriefSec('role',{intro:v})}/>
+              <div style={sub}>Items</div>
+              {(briefData.role.items||[]).map((r,i)=>(
+                <div key={i} style={itemBox}>
+                  <BField label="Title" value={r.title} onChange={v=>briefList('role','items',a=>a.map((x,j)=>j===i?{...x,title:v}:x))}/>
+                  <BField label="Body" value={r.body} rows={2} onChange={v=>briefList('role','items',a=>a.map((x,j)=>j===i?{...x,body:v}:x))}/>
+                  <div style={ctrlRow}>
+                    <MiniBtn icon="ti-chevron-up" onClick={()=>briefList('role','items',a=>listMove(a,i,-1))} title="Move up" disabled={i===0}/>
+                    <MiniBtn icon="ti-chevron-down" onClick={()=>briefList('role','items',a=>listMove(a,i,1))} title="Move down" disabled={i===briefData.role.items.length-1}/>
+                    <MiniBtn icon="ti-trash" danger onClick={()=>briefList('role','items',a=>a.filter((_,j)=>j!==i))} title="Remove"/>
+                  </div>
+                </div>
+              ))}
+              <button onClick={()=>briefList('role','items',a=>[...a,{title:"New item",body:""}])} style={addBtn}>+ Add item</button>
+              <div style={sub}>Note</div>
+              <BField value={briefData.role.note} rows={2} onChange={v=>setBriefSec('role',{note:v})}/>
+            </div>
+
+            {/* Brief — Benefits */}
+            <div style={card}>
+              <div style={secLbl}>Brief — Benefits</div>
+              <BField label="Eyebrow" value={briefData.benefits.eyebrow} onChange={v=>setBriefSec('benefits',{eyebrow:v})}/>
+              <BField label="Title" value={briefData.benefits.title} onChange={v=>setBriefSec('benefits',{title:v})}/>
+              <BField label="Intro" value={briefData.benefits.intro} rows={2} onChange={v=>setBriefSec('benefits',{intro:v})}/>
+              <div style={sub}>Items</div>
+              {(briefData.benefits.items||[]).map((bn,i)=>(
+                <div key={i} style={itemBox}>
+                  <BField label="Title" value={bn.title} onChange={v=>briefList('benefits','items',a=>a.map((x,j)=>j===i?{...x,title:v}:x))}/>
+                  <BField label="Body" value={bn.body} rows={2} onChange={v=>briefList('benefits','items',a=>a.map((x,j)=>j===i?{...x,body:v}:x))}/>
+                  <div style={ctrlRow}>
+                    <MiniBtn icon="ti-chevron-up" onClick={()=>briefList('benefits','items',a=>listMove(a,i,-1))} title="Move up" disabled={i===0}/>
+                    <MiniBtn icon="ti-chevron-down" onClick={()=>briefList('benefits','items',a=>listMove(a,i,1))} title="Move down" disabled={i===briefData.benefits.items.length-1}/>
+                    <MiniBtn icon="ti-trash" danger onClick={()=>briefList('benefits','items',a=>a.filter((_,j)=>j!==i))} title="Remove"/>
+                  </div>
+                </div>
+              ))}
+              <button onClick={()=>briefList('benefits','items',a=>[...a,{title:"New benefit",body:""}])} style={addBtn}>+ Add benefit</button>
+            </div>
+
+            {/* Brief — How to decide */}
+            <div style={card}>
+              <div style={secLbl}>Brief — How to decide</div>
+              <BField label="Eyebrow" value={briefData.decide.eyebrow} onChange={v=>setBriefSec('decide',{eyebrow:v})}/>
+              <BField label="Title" value={briefData.decide.title} onChange={v=>setBriefSec('decide',{title:v})}/>
+              <BField label="Intro" value={briefData.decide.intro} rows={2} onChange={v=>setBriefSec('decide',{intro:v})}/>
+              <div style={sub}>Steps</div>
+              {(briefData.decide.steps||[]).map((s,i)=>(
+                <div key={i} style={itemBox}>
+                  <BField label="Label" value={s.label} onChange={v=>briefList('decide','steps',a=>a.map((x,j)=>j===i?{...x,label:v}:x))}/>
+                  <BField label="Body" value={s.body} rows={2} onChange={v=>briefList('decide','steps',a=>a.map((x,j)=>j===i?{...x,body:v}:x))}/>
+                  <div style={ctrlRow}>
+                    <MiniBtn icon="ti-chevron-up" onClick={()=>briefList('decide','steps',a=>listMove(a,i,-1))} title="Move up" disabled={i===0}/>
+                    <MiniBtn icon="ti-chevron-down" onClick={()=>briefList('decide','steps',a=>listMove(a,i,1))} title="Move down" disabled={i===briefData.decide.steps.length-1}/>
+                    <MiniBtn icon="ti-trash" danger onClick={()=>briefList('decide','steps',a=>a.filter((_,j)=>j!==i))} title="Remove"/>
+                  </div>
+                </div>
+              ))}
+              <button onClick={()=>briefList('decide','steps',a=>[...a,{label:"New step",body:""}])} style={addBtn}>+ Add step</button>
+              <div style={sub}>Decision cards</div>
+              <BField label="Accepted — heading" value={briefData.decide.inTitle} onChange={v=>setBriefSec('decide',{inTitle:v})}/>
+              <BField label="Accepted — body" value={briefData.decide.inBody} rows={2} onChange={v=>setBriefSec('decide',{inBody:v})}/>
+              <BField label="Declined — heading" value={briefData.decide.outTitle} onChange={v=>setBriefSec('decide',{outTitle:v})}/>
+              <BField label="Declined — body" value={briefData.decide.outBody} rows={2} onChange={v=>setBriefSec('decide',{outBody:v})}/>
+            </div>
+
+            {/* Brief — Footer */}
+            <div style={card}>
+              <div style={secLbl}>Brief — Footer</div>
+              <BField label="Contact label" value={briefData.footer.contactLabel} onChange={v=>setBriefSec('footer',{contactLabel:v})}/>
+              <BField label="Name / title" value={briefData.footer.name} onChange={v=>setBriefSec('footer',{name:v})}/>
+              <BField label="Email / contact" value={briefData.footer.email} onChange={v=>setBriefSec('footer',{email:v})}/>
+              <BField label="Copyright line" value={briefData.footer.copyright} onChange={v=>setBriefSec('footer',{copyright:v})}/>
             </div>
 
             {/* Data */}
