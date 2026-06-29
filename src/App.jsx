@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
+import ProjectBrief from './ProjectBrief';
 
 // ── DEFAULT DATA ────────────────────────────────────────
 const DEFAULT_DEPTS_FULL = [
@@ -430,6 +431,7 @@ export default function App() {
 
       <div style={{flex:1,display:"flex",flexDirection:"column",minWidth:0}}>
         <div style={{padding:"16px 18px 0",background:"#F4F2EC"}}>
+          {tab!=="brief" && <>
           <div style={{display:"flex",gap:8,marginBottom:10}}>
             {[{v:totAll,l:"Use cases",s:"across all departments",c:BRAND.red},{v:lowN,l:"Quick wins",s:"low effort · immediate",c:"#186E3B"},{v:data.depts.length,l:"Departments",s:"in the roadmap",c:"#37657C"},{v:allUCs.filter(u=>u.nn).length,l:"Net-new items",s:"outside current stack",c:"#8E192C"}].map((s,i)=>(
               <div key={i} style={{flex:1,background:"#fff",border:"1px solid #E4E7EC",borderRadius:8,padding:"10px 12px"}}>
@@ -448,13 +450,16 @@ export default function App() {
               {cEff.map(c=><div key={c.label} style={{width:`${totAll?(c.v/totAll)*100:0}%`,background:c.color}}/>)}
             </div>
           </div>
+          </>}
           <div style={{display:"flex",alignItems:"center",borderBottom:"1px solid #E4E7EC"}}>
-            {[["Use cases","uc"],["Charts","charts"],["Wave plan","waves"],["KPI targets","kpis"],["Manage","manage"]].map(([lbl,val])=><TBtn key={val} lbl={lbl} val={val} cur={tab} onChange={setTab}/>)}
+            {[["Use cases","uc"],["Charts","charts"],["Wave plan","waves"],["KPI targets","kpis"],["Project brief","brief"],["Manage","manage"]].map(([lbl,val])=><TBtn key={val} lbl={lbl} val={val} cur={tab} onChange={setTab}/>)}
             <div style={{marginLeft:"auto",paddingRight:4}}><SaveStatus status={status}/></div>
           </div>
         </div>
 
-        <div style={{padding:"14px 18px 22px",background:"#F4F2EC"}}>
+        <div style={{padding:tab==="brief"?0:"14px 18px 22px",background:"#F4F2EC"}}>
+
+          {tab==="brief" && <ProjectBrief/>}
 
           {tab==="uc" && <>
             {selDept && (
